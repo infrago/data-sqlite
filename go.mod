@@ -3,15 +3,15 @@ module github.com/infrago/data-sqlite
 go 1.25.3
 
 require (
-	github.com/infrago/data v0.9.0
-	github.com/infrago/infra v0.9.0
+	github.com/infrago/data v0.10.0
+	github.com/infrago/infra v0.10.0
 	modernc.org/sqlite v1.39.0
 )
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/infrago/base v0.9.0 // indirect
+	github.com/infrago/base v0.10.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
