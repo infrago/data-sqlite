@@ -8,7 +8,6 @@ require (
 	modernc.org/sqlite v1.39.0
 )
 
-replace github.com/infrago/data => ../data
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
