@@ -2,11 +2,13 @@ package data_sqlite
 
 import (
 	"database/sql"
+	"errors"
 	"strings"
 	"sync/atomic"
 
+	. "github.com/infrago/base"
 	"github.com/infrago/data"
-	_ "modernc.org/sqlite"
+	"modernc.org/sqlite"
 )
 
 type (
@@ -76,4 +78,57 @@ func (sqliteDialect) Quote(s string) string {
 }
 func (sqliteDialect) Placeholder(_ int) string { return "?" }
 func (sqliteDialect) SupportsILike() bool      { return false }
-func (sqliteDialect) SupportsReturning() bool  { return false }
+func (sqliteDialect) SupportsReturning() bool  { return true }
+func (sqliteDialect) MaxParams() int           { return 999 }
+func (sqliteDialect) ClassifyError(err error) error {
+	var sqliteErr *sqlite.Error
+	if !errors.As(err, &sqliteErr) {
+		return nil
+	}
+	code := sqliteErr.Code()
+	switch code {
+	case 1555, 2067:
+		return data.ErrDuplicate
+	case 787:
+		return data.ErrForeignKey
+	case 5, 6:
+		return data.ErrTimeout
+	case 9:
+		return data.ErrCanceled
+	case 14:
+		return data.ErrDriver
+	default:
+		if code&0xff == 19 {
+			return data.ErrConflict
+		}
+		return nil
+	}
+}
+func (sqliteDialect) BindValue(cfg Var, v any) (any, bool) {
+	switch {
+	case data.IsJSONVar(cfg):
+		return data.BindJSONValue(v)
+	case data.IsBinaryVar(cfg):
+		return data.BindBinaryValue(v)
+	case data.IsUUIDVar(cfg), data.IsDecimalVar(cfg):
+		return data.BindTextValue(v)
+	case data.IsTimeVar(cfg):
+		return data.BindTimeValue(v)
+	default:
+		return nil, false
+	}
+}
+func (sqliteDialect) DecodeValue(cfg Var, value any) (any, bool) {
+	switch {
+	case data.IsJSONVar(cfg):
+		return data.DecodeJSONValue(value)
+	case data.IsBinaryVar(cfg):
+		return data.DecodeBinaryValue(value)
+	case data.IsUUIDVar(cfg), data.IsDecimalVar(cfg):
+		return data.DecodeTextValue(value)
+	case data.IsTimeVar(cfg):
+		return data.DecodeTimeValue(value)
+	default:
+		return nil, false
+	}
+}
