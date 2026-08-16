@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	. "github.com/infrago/base"
 	"github.com/infrago/data"
@@ -22,6 +23,8 @@ type (
 
 	sqliteDialect struct{}
 )
+
+const sqliteTimeLayout = "2006-01-02T15:04:05.000000000Z"
 
 func (d *sqliteDriver) Connect(inst *data.Instance) (data.Connection, error) {
 	return &sqliteConnection{instance: inst}, nil
@@ -113,7 +116,17 @@ func (sqliteDialect) BindValue(cfg Var, v any) (any, bool) {
 	case data.IsUUIDVar(cfg), data.IsDecimalVar(cfg):
 		return data.BindTextValue(v)
 	case data.IsTimeVar(cfg):
-		return data.BindTimeValue(v)
+		value, ok := data.BindTimeValue(v)
+		if !ok || value == nil {
+			return value, ok
+		}
+		if moment, ok := value.(time.Time); ok {
+			// SQLite has no native timestamp storage class. Persist and compare
+			// every timestamp as the same fixed-width UTC representation so two
+			// equal instants do not sort differently because of their offsets.
+			return moment.UTC().Format(sqliteTimeLayout), true
+		}
+		return value, true
 	default:
 		return nil, false
 	}
